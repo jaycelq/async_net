@@ -2,25 +2,15 @@
 // Created by qiang on 8/6/17.
 //
 
-#ifndef ASYNC_EVENT_NET_ASYNC_EPOLL_H
-#define ASYNC_EVENT_NET_ASYNC_EPOLL_H
+#ifndef ASYNC_NET_H
+#define ASYNC_NET_H
+
+#include <string>
 
  //TODO:implement RingBuffer
-
 typedef std::string RingBuffer;
 
-class asyncConnEvent
-{
-private:
-    int mask;  //状态掩码，READABLE(EPOLLIN)或者WRITEABLE(EPOLLOUT)
-    int fd;    //连接句柄，用来索引连接
-
-public:
-    virtual int onReadable();
-    virtual int onWriteable();
-};
-
-class asyncConn
+class AsyncConn
 {
 private:
     int fd;         //连接句柄
@@ -30,10 +20,21 @@ private:
     RingBuffer send_buf;
 };
 
-class asycConnMgr
+class AsyncServer
 {
+public:
+    AsyncServer(char* ip, int port) : ip(ip), port(port), fd(0) {}
+    ~AsyncServer() {}
+
+    // 初始化服务器
+    int init();
+
 private:
-    asyncConn conn_vec_[1024];  //TODO:fix max connection
+    int createSocket();
+
+    std::string ip;
+    int port;
+    int fd;
 };
 
 #endif //ASYNC_EVENT_NET_ASYNC_EPOLL_H
