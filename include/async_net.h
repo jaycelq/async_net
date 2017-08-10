@@ -6,6 +6,7 @@
 #define ASYNC_NET_H
 
 #include <string>
+#include "async_def.h"
 
  //TODO:implement RingBuffer
 typedef std::string RingBuffer;
@@ -28,9 +29,11 @@ public:
 
     // 初始化服务器
     int init();
+    int start();
 
 private:
-    int createSocket();
+    int setReuseAddr();
+    int bindSocket();
 
     std::string ip;
     int port;
