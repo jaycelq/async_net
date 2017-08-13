@@ -65,6 +65,7 @@ flags = [
 '-isystem', '/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../include/c++/4.8.5/backward',
 '-isystem', '/usr/lib/gcc/x86_64-redhat-linux/4.8.5/include',
 '-I', './include',
+'-DSOURCE_PATH_SIZE',
 ]
 
 
