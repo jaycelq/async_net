@@ -178,9 +178,37 @@ int AsyncServer::acceptSocket()
     }
 
     conn->setConnId(conn_id_);
+    conn->server = this;
 
     addConn(clifd, conn);
 
+    return 0;
+}
+
+AsyncConn* AsyncServer::findConn(uint32_t conn_id_)
+{
+    AsyncConnMapIter conn_iter = conn_map_.find(conn_id_);
+    if (conn_iter == conn_map_.end())
+    {
+        return NULL;
+    }
+
+    return conn_iter->second;
+}
+
+int AsyncServer::removeConn(uint32_t conn_id)
+{
+    AsyncConn* conn = findConn(conn_id);
+    if (conn == NULL)
+    {
+        return 0;
+    }
+
+    AsyncEventLoop* event_loop = getRecvLoop(conn->fd_);
+    event_loop->unregisterEvent(conn->fd_);
+
+    conn_map_.erase(conn_id);
+    delete conn;
     return 0;
 }
 
@@ -192,13 +220,14 @@ int AsyncServer::addConn(int fd, AsyncConn* conn)
         return AE_ERR;
     }
 
-    if (conn_arr_[fd] != NULL)
+    AsyncConn* conn_in_map = findConn(conn->conn_id_);
+    if (conn_in_map != NULL)
     {
-        LOG_ERROR("Connection exist, fd=%d", fd);
+        LOG_ERROR("Connetion in Loop");
         return AE_ERR;
     }
 
-    conn_arr_[fd] = conn;
+    conn_map_[conn->conn_id_] = conn;
 
     AsyncEventLoop* event_loop = getRecvLoop(fd);
     if (event_loop == NULL)

@@ -6,6 +6,7 @@
 #define ASYNC_NET_H
 
 #include <string>
+#include "boost/pool/pool.hpp"
 #include "async_def.h"
 #include "async_event.h"
 #include "async_conn.h"
@@ -28,6 +29,9 @@ public:
 private:
     AsyncEventLoop* getRecvLoop(int fd);
     int32_t addConn(int fd, AsyncConn* conn);
+    AsyncConn* findConn(uint32_t conn_id);
+public:
+    int32_t removeConn(uint32_t conn_id);
 
 private:
     static int setReuseAddr(int fd, int reuse);
@@ -44,7 +48,9 @@ private:
     uint32_t recv_loop_arr_size_;
 
     // TODO: manmage connection
-    AsyncConn* conn_arr_[1024];
+    typedef std::map<uint32_t, AsyncConn*> AsyncConnMap;
+    typedef AsyncConnMap::iterator AsyncConnMapIter;
+    AsyncConnMap conn_map_;
     uint32_t conn_id_;
 };
 

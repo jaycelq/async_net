@@ -16,7 +16,6 @@ AsyncConnEvent::~AsyncConnEvent()
 
 AsyncEventLoop::AsyncEventLoop() : epfd(0)
 {
-    bzero(events, sizeof(events));
 }
 
 AsyncEventLoop::~AsyncEventLoop()
@@ -40,6 +39,18 @@ int AsyncEventLoop::fini()
     return 0;
 }
 
+int AsyncEventLoop::unregisterEvent(int fd)
+{
+    LOG_INFO("unregisterEvent fd=%d", fd);
+    ConnEventMapIter event_iter = conn_event_map_.find(fd);
+    if (event_iter != conn_event_map_.end())
+    {
+        conn_event_map_.erase(event_iter);
+    }
+    epoll_ctl(epfd, EPOLL_CTL_DEL, fd, NULL);
+    return 0;
+}
+
 int AsyncEventLoop::registerEvent(AsyncConnEvent* event)
 {
     if (event == NULL)
@@ -54,7 +65,8 @@ int AsyncEventLoop::registerEvent(AsyncConnEvent* event)
         return AE_ERR;
     }
 
-    if (events[event->fd_] != NULL)
+    AsyncConnEvent* event_in_map = findConnEvent(event->fd_);
+    if (event_in_map != NULL)
     {
         LOG_ERROR("event fd=%d has been registered", event->fd_);
         return AE_ERR;
@@ -66,7 +78,7 @@ int AsyncEventLoop::registerEvent(AsyncConnEvent* event)
         return AE_ERR;
     }
 
-    events[event->fd_] = event;
+    conn_event_map_[event->fd_] = event;
     event->event_loop_ = this;
 
     LOG_INFO("registerEvent fd=%d succ.", event->fd_);
@@ -82,7 +94,7 @@ int AsyncEventLoop::addConnEvent(int fd, int mask)
         return AE_ERR;
     }
 
-    AsyncConnEvent* event = events[fd];
+    AsyncConnEvent* event = findConnEvent(fd);
     if (event == NULL)
     {
         LOG_ERROR("addConnEvent fd=%u exist", fd);
@@ -120,8 +132,8 @@ int AsyncEventLoop::poll(uint32_t )
         {
             const epoll_event& e = ep_events[event_idx];
             int event_fd = e.data.fd;
-            AsyncConnEvent* conn_event = events[event_fd];
-            if (conn_event == NULL | conn_event->fd_ != event_fd)
+            AsyncConnEvent* conn_event = findConnEvent(event_fd);
+            if (conn_event == NULL || conn_event->fd_ != event_fd)
             {
                 LOG_FATAL("epoll error");
                 continue;
@@ -139,4 +151,15 @@ int AsyncEventLoop::poll(uint32_t )
     }
 
     return events_num;
+}
+
+AsyncConnEvent* AsyncEventLoop::findConnEvent(int fd)
+{
+    ConnEventMapIter conn_iter = conn_event_map_.find(fd);
+    if (conn_iter == conn_event_map_.end())
+    {
+        return NULL;
+    }
+
+    return conn_iter->second;
 }

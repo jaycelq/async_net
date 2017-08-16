@@ -42,8 +42,14 @@ public:
     int unregisterEvent(int fd);
 
     int poll(uint32_t timeout_ms);
+
 private:
-    AsyncConnEvent* events[1024];
+    AsyncConnEvent* findConnEvent(int fd);
+
+private:
+    typedef std::map<uint32_t, AsyncConnEvent*> ConnEventMap;
+    typedef ConnEventMap::iterator ConnEventMapIter;
+    ConnEventMap conn_event_map_;
 
     int epfd;
 };
